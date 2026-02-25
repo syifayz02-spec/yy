@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You 💙</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at top, #e0f7ff, #f3e8ff, #ffffff);
+            touch-action: manipulation; /* Menghilangkan delay tap di HP */
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* ========= SLIDE 1: PUZZLE ========= */
+        #slide1 {
+            background: linear-gradient(135deg, #dbeafe, #ede9fe, #fce7f3);
+        }
+
+        #board {
+            display: grid;
+            /* Ukuran disesuaikan agar pas di layar HP */
+            grid-template-columns: repeat(3, 90px);
+            grid-template-rows: repeat(3, 90px);
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .cell {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            color: #4f46e5;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .empty {
+            background: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        h2 {
+            color: #4338ca;
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        /* ========= SLIDE 2: FOTO & PESAN ========= */
+        #slide2 {
+            display: none;
+            background: linear-gradient(135deg, #e0f2fe, #ede9fe);
+        }
+
+        #slide2 img {
+            width: 80%;
+            max-width: 280px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            animation: zoom 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes zoom {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 12px 35px;
+            border: none;
+            border-radius: 30px;
+            background: #6366f1;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        #message {
+            margin-top: 20px;
+            display: none;
+            font-size: 17px;
+            text-align: center;
+            padding: 0 15px;
+            color: #4c1d95;
+            line-height: 1.6;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #nextBtn { display: none; }
+
+        /* ========= SLIDE 3: VIDEO ========= */
+        #slide3 {
+            display: none;
+            background: black;
+        }
+
+        #slide3 video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Biar video tidak terpotong */
+        }
+
+        /* CONFETTI */
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide" id="slide1">
+        <h2 id="hintText">Geser Sampai Benar 💙</h2>
+        <div id="board"></div>
+    </div>
+
+    <div class="slide" id="slide2">
+        <img src="foto.jpg" alt="Foto">
+        <button id="openBtn" onclick="openMessage()">Open</button>
+        <div id="message">
+            Terimakasih sudah mengucapkan gadis cantik ini 💙<br>
+            Selamat Ulang Tahun 🎂✨
+        </div>
+        <button id="nextBtn" onclick="nextSlide()">Next</button>
+    </div>
+
+    <div class="slide" id="slide3">
+        <video id="myVideo" src="video.mp4" playsinline loop></video>
+    </div>
+
+    <script>
+        /* ===== PUZZLE LOGIC ===== */
+        let correct = ["2","6","0","2","2","0","0","8",""];
+        let tiles = [...correct];
+        
+        // Fungsi Shuffle yang dipastikan teracak
+        function shuffle() {
+            for (let i = tiles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+            }
+            if (JSON.stringify(tiles) === JSON.stringify(correct)) shuffle();
+        }
+
+        shuffle();
+        const board = document.getElementById("board");
+
+        function draw() {
+            board.innerHTML = "";
+            tiles.forEach((num, i) => {
+                let div = document.createElement("div");
+                div.className = "cell";
+                if (num === "") {
+                    div.classList.add("empty");
+                } else {
+                    div.innerText = num;
+                    div.onclick = () => move(i);
+                }
+                board.appendChild(div);
+            });
+        }
+
+        function move(index) {
+            let emptyIndex = tiles.indexOf("");
+            let row = Math.floor(index / 3);
+            let col = index % 3;
+            let eRow = Math.floor(emptyIndex / 3);
+            let eCol = emptyIndex % 3;
+
+            // Cek apakah bertetangga
+            if (Math.abs(row - eRow) + Math.abs(col - eCol) === 1) {
+                [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+                draw();
+                checkWin();
+            }
+        }
+
+        function checkWin() {
+            if (JSON.stringify(tiles) === JSON.stringify(correct)) {
+                createConfetti();
+                document.getElementById("hintText").innerText = "Kamu Berhasil 💙✨";
+                setTimeout(() => {
+                    document.getElementById("slide1").style.display = "none";
+                    document.getElementById("slide2").style.display = "flex";
+                }, 2000);
+            }
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 70; i++) {
+                let conf = document.createElement("div");
+                conf.style.position = "fixed";
+                conf.style.width = "10px";
+                conf.style.height = "10px";
+                conf.style.background = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                conf.style.left = Math.random() * 100 + "vw";
+                conf.style.top = "-10px";
+                conf.style.borderRadius = "50%";
+                conf.style.zIndex = "999";
+                conf.style.animation = `fall ${2 + Math.random() * 2}s linear forwards`;
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 4000);
+            }
+        }
+
+        draw();
+
+        /* ===== SLIDE 2 & 3 LOGIC ===== */
+        function openMessage() {
+            document.getElementById("message").style.display = "block";
+            document.getElementById("nextBtn").style.display = "inline-block";
+            document.getElementById("openBtn").style.display = "none";
+        }
+
+        function nextSlide() {
+            document.getElementById("slide2").style.display = "none";
+            document.getElementById("slide3").style.display = "flex";
+            let v = document.getElementById("myVideo");
+            v.play();
+        }
+    </script>
+</body>
+</html>
